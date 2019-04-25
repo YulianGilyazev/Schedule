@@ -1,6 +1,6 @@
 Запуск
 ```
-FLASK_APP=main.py flask run
+FLASK_APP=server.py flask run
 ```
 
 ```
