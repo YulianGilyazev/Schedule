@@ -11,7 +11,7 @@ from peewee import *
 import psycopg2
 import json
 import sys
-from args import params
+from args import params, PORT, HOST
 
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -73,5 +73,4 @@ def get_code(station):
 
 
 if __name__ == "__main__":
-    PORT = '5000'
     app.run('::', PORT, debug=True, threaded=True)
