@@ -4,10 +4,9 @@
 import sys
 import psycopg2
 import os
+from args import params
 path = os.getcwd() + '/esr.csv'
 
-
-params = dict(dbname="rasp", user="yulian", password="12369", host="localhost")
 with psycopg2.connect(**params) as conn:
     cur = conn.cursor()
     cur.execute('DROP TABLE IF EXISTS table1')
