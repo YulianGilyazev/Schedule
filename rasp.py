@@ -1,12 +1,10 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # vim:fileencoding=utf-8
 import requests
 import argparse
-
-HOST = '127.0.0.1'
-PORT = '5000'
+from args import HOST
+from args import PORT
 
 
 def get_args():
