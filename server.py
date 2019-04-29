@@ -11,6 +11,7 @@ from peewee import *
 import psycopg2
 import json
 import sys
+from args import params
 
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -64,7 +65,6 @@ def get_trains(departure, arrival):
     return json.loads(response.text)
 
 def get_code(station):
-    params = dict(dbname="rasp", user="yulian", password="12369", host="localhost")
     with psycopg2.connect(**params) as conn:
         cur = conn.cursor()
         cur.execute('SELECT code FROM codes where name = %s LIMIT 1', (station, ))
