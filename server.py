@@ -1,27 +1,17 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # vim:fileencoding=utf-8
-
 import flask
 from flask import Flask
 from flask import request
 import requests
-import datetime
-from peewee import *
+from datetime import datetime
 import psycopg2
 import json
-import sys
-from args import params, PORT, HOST
+from args import params, PORT, HOST, lang, transport_types, system, address
 
-reload(sys)
-sys.setdefaultencoding('utf8')
 
-lang = 'ru_RU'
-transport_types = 'suburban'
-system = 'esr'
-address = 'https://api.rasp.yandex.net/v3.0/search/?apikey=3a91f747-0a08-4fa3-ad32-c014a043b08c'
 app = Flask(__name__)
-
 
 
 @app.route('/nextTrain', methods=['POST'])
@@ -30,12 +20,9 @@ def next_train():
     arrival = flask.request.args['arrival']
     data = get_trains(departure, arrival)
     out = ''
-    for train in data["segments"]:
-        if str(train["arrival"][11:19:1]) >= str(datetime.datetime.now().strftime("%H:%M:%S")):
-            out += train["thread"]["title"]
-            out += " " * (50 - len(train["thread"]["title"]))
-            out += str(train["arrival"])[11:19:1]
-            out += '\n'
+    for train in data:
+        if str(train[1]) >= str(datetime.now().strftime("%H:%M:%S")):
+            out = ' '.join([str(train[0]), str(train[1])])
             break
     if out == '':
         out = "Не найдено подходящих поездов"
@@ -48,26 +35,59 @@ def rasp():
     arrival = flask.request.args['arrival']
     data = get_trains(departure, arrival)
     out = ''
-    for train in data["segments"]:
-        out += train["thread"]["title"]
-        out += " " * (50 - len(train["thread"]["title"]))
-        out += str(train["arrival"])[11:19:1]
-        out += '\n'
+    for train in data:
+        '''
+        По другому не получилось 
+        Когда пытался получить len(train[0]) возращалось непонятное левое число.
+        '''
+        out = ' '.join([out, str(train[0]), str(train[1]), '\n'])
     if out == '':
         out = "Не найдено подходящих поездов"
     return out
 
+
 def get_trains(departure, arrival):
-    date = str(datetime.datetime.now().strftime("%Y-%m-%d"))
+    date = str(datetime.now().strftime("%Y-%m-%d"))
     arrival_code = get_code(arrival)
     departure_code = get_code(departure)
-    response = requests.get(address + '&lang=' + lang + '&transport_types=' + transport_types + '&system=' + system + '&date=' + date + '&from=' + departure_code + '&to=' + arrival_code)
-    return json.loads(response.text)
+    try:
+        response = requests.get(address + '&lang=' + lang + '&transport_types=' + transport_types + '&system=' + system + '&date=' + date + '&from=' + str(departure_code) + '&to=' + str(arrival_code))
+        data = json.loads(response.text)
+        name_and_time = []
+        with psycopg2.connect(**params) as conn:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM schedule WHERE arrival_station = %s AND departure_station = %s",
+                        (arrival, departure))
+            for train in data["segments"]:
+                time = str(train['arrival'])[11:19]    #time = datetime.strptime(str(train['arrival']), '%Y-%m-%dT%H:%M:%S%z') не работает(
+                name_and_time.append([train['thread']['title'], time])
+                cur = conn.cursor()
+                cur.execute('''
+                            INSERT INTO schedule(suburban, arrival_station, departure_station, departure_time)
+                            VALUES(%s, %s, %s, %s);
+                            ''', (train["thread"]["title"], arrival, departure, time)
+                            )
+        return name_and_time
+    except BaseException:
+        with psycopg2.connect(**params) as conn:
+            cur = conn.cursor()
+            cur.execute('''
+                SELECT suburban, departure_time
+                FROM schedule
+                WHERE departure_station = %s AND arrival_station = %s
+                ORDER BY departure_time;
+                ''', (departure, arrival)
+                )
+            name_and_time = []
+            for row in cur.fetchall():
+                name_and_time.append([str(row[0]).strip(), str(row[1]).strip()])
+            return name_and_time
+
 
 def get_code(station):
     with psycopg2.connect(**params) as conn:
         cur = conn.cursor()
-        cur.execute('SELECT code FROM codes where name = %s LIMIT 1', (station, ))
+        cur.execute('SELECT code FROM codes where name = %s LIMIT 1;', (station, ))
         for row in cur:
             return str(row[0])
 

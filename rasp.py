@@ -5,12 +5,12 @@ import requests
 import argparse
 from args import HOST
 from args import PORT
+import sys
 
 
 def get_args():
     parser = argparse.ArgumentParser()
     subs = parser.add_subparsers (dest='action')
-
     nextTrain = subs.add_parser('nextTrain', help='Action next train')
     nextTrain.add_argument('--departure-station', dest='departure', help='Choose departure station')
     nextTrain.add_argument('--arrival-station', dest='arrival', help='Choose arrival station')
@@ -23,12 +23,12 @@ def get_args():
 
 def next_train(departure, arrival):
     response = requests.post('http://' + HOST + ':' + PORT + '/nextTrain', params={'departure': departure, 'arrival': arrival})
-    return (response.text)
+    return response.text
 
 
 def rasp(departure, arrival):
     response = requests.post('http://' + HOST + ':' + PORT + '/rasp', params={'departure': departure, 'arrival': arrival})
-    return(response.text)
+    return response.text
 
 
 if __name__ == '__main__':
