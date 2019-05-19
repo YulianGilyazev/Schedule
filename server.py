@@ -36,10 +36,6 @@ def rasp():
     data = get_trains(departure, arrival)
     out = ''
     for train in data:
-        '''
-        По другому не получилось 
-        Когда пытался получить len(train[0]) возращалось непонятное левое число.
-        '''
         out = ' '.join([out, str(train[0]), str(train[1]), '\n'])
     if out == '':
         out = "Не найдено подходящих поездов"
