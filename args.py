@@ -1,4 +1,4 @@
-params = dict(dbname="rasp", user="postgres", password="12369", host="localhost")
+params = dict(dbname="rasp", user="postgres", password="***", host="localhost")
 HOST = '127.0.0.1'
 PORT = '5000'
 lang = 'ru_RU'
